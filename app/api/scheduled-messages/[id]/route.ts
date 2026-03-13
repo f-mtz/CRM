@@ -6,11 +6,12 @@ export const dynamic = 'force-dynamic';
 // GET a single scheduled message
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await context.params;
     const message = await prisma.scheduledMessage.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         card: {
           select: {
@@ -38,9 +39,10 @@ export async function GET(
 // PATCH update a scheduled message
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await context.params;
     const body = await request.json();
     const { message, scheduledAt, sent, mediaUrl, mediaType, mediaName, cloudStoragePath, isPublic } = body;
 
@@ -55,7 +57,7 @@ export async function PATCH(
     if (isPublic !== undefined) updateData.isPublic = isPublic;
 
     const scheduledMessage = await prisma.scheduledMessage.update({
-      where: { id: params.id },
+      where: { id },
       data: updateData,
       include: {
         card: {
@@ -80,11 +82,12 @@ export async function PATCH(
 // DELETE a scheduled message
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await context.params;
     await prisma.scheduledMessage.delete({
-      where: { id: params.id },
+      where: { id },
     });
 
     return NextResponse.json({ success: true });
