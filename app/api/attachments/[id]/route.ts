@@ -1,3 +1,4 @@
+import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/db';
 import { deleteFile } from '@/lib/s3';
@@ -5,9 +6,12 @@ import { deleteFile } from '@/lib/s3';
 export const dynamic = 'force-dynamic';
 
 // DELETE attachment
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
   try {
-    const id = params?.id;
+    const { id } = await context.params;
     
     // Get attachment to check if it has cloudStoragePath
     const attachment = await prisma?.attachment?.findUnique?.({
