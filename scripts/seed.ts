@@ -19,14 +19,15 @@ async function main() {
   // Create Contacts Board
   const contactsBoard = await prisma.board.create({
     data: {
-      title: 'Pipeline de Vendas',
+      title: 'Funil de Contatos',
       type: 'contacts',
       lists: {
         create: [
-          { title: 'Novos', order: 0 },
-          { title: 'Proposta Enviada', order: 1 },
-          { title: 'Negócios Fechados', order: 2 },
-          { title: 'Negócios Não Fechados', order: 3 },
+          { title: 'Sem contato', order: 0 },
+          { title: 'Contato feito', order: 1 },
+          { title: 'Identificação do lead', order: 2 },
+          { title: 'Apresentação', order: 3 },
+          { title: 'Proposta enviada', order: 4 },
         ],
       },
     },
@@ -152,7 +153,7 @@ async function main() {
       data: {
         title: contacts[0].name,
         description: `${contacts[0].company} - ${contacts[0].notes}`,
-        listId: contactsBoard.lists[1].id, // Proposta Enviada
+        listId: contactsBoard.lists[4].id, // Proposta enviada
         order: 0,
         contactId: contacts[0].id,
         dealId: deals[0].id,
@@ -163,7 +164,7 @@ async function main() {
       data: {
         title: contacts[1].name,
         description: `${contacts[1].company} - ${contacts[1].notes}`,
-        listId: contactsBoard.lists[0].id, // Novos
+        listId: contactsBoard.lists[0].id, // Sem contato
         order: 0,
         contactId: contacts[1].id,
         dealId: deals[1].id,
@@ -173,7 +174,7 @@ async function main() {
       data: {
         title: contacts[2].name,
         description: `${contacts[2].company} - ${contacts[2].notes}`,
-        listId: contactsBoard.lists[0].id, // Novos
+        listId: contactsBoard.lists[2].id, // Identificação do lead
         order: 1,
         contactId: contacts[2].id,
         labels: { connect: [{ id: labels[1].id }] },

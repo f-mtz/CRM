@@ -48,6 +48,19 @@ export default function KanbanList({ list, onUpdateTitle, onDelete, onCreateCard
     setIsAddingCard(false);
   };
 
+  const totalDealValue =
+    boardType === 'contacts'
+      ? (list?.cards ?? []).reduce(
+          (sum: number, card: any) => sum + (card?.deal?.value ?? 0),
+          0
+        )
+      : 0;
+
+  const formattedTotalDealValue =
+    boardType === 'contacts'
+      ? `R$ ${totalDealValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+      : '';
+
   return (
     <>
       <Card ref={setNodeRef} className="flex-shrink-0 w-80 flex flex-col max-h-[calc(100vh-200px)]">
@@ -62,10 +75,21 @@ export default function KanbanList({ list, onUpdateTitle, onDelete, onCreateCard
               autoFocus
             />
           ) : (
-            <h3 className="text-sm font-semibold flex-1">
-              {list?.title ?? ''}
-              <span className="ml-2 text-muted-foreground">({list?.cards?.length ?? 0})</span>
-            </h3>
+            <div className="flex flex-col flex-1">
+              <div className="flex items-center justify-between gap-2">
+                <h3 className="text-sm font-semibold">
+                  {list?.title ?? ''}
+                  <span className="ml-2 text-muted-foreground">
+                    ({list?.cards?.length ?? 0})
+                  </span>
+                </h3>
+                {boardType === 'contacts' && (
+                  <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">
+                    {formattedTotalDealValue}
+                  </span>
+                )}
+              </div>
+            </div>
           )}
 
           <DropdownMenu>
