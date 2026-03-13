@@ -1,12 +1,16 @@
+import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
 
 // PATCH update comment
-export async function PATCH(request: Request, { params }: { params: { id: string } }) {
+export async function PATCH(
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
   try {
-    const id = params?.id;
+    const { id } = await context.params;
     const body = await request?.json?.();
     const { content } = body ?? {};
 
@@ -23,9 +27,12 @@ export async function PATCH(request: Request, { params }: { params: { id: string
 }
 
 // DELETE comment
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
   try {
-    const id = params?.id;
+    const { id } = await context.params;
     
     await prisma?.comment?.delete?.({
       where: { id: id ?? '' },

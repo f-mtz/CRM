@@ -1,12 +1,16 @@
+import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
 
 // GET single card with full details
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
   try {
-    const id = params?.id;
+    const { id } = await context.params;
     
     const card = await prisma?.card?.findUnique?.({
       where: { id: id ?? '' },
@@ -39,9 +43,12 @@ export async function GET(request: Request, { params }: { params: { id: string }
 }
 
 // PATCH update card
-export async function PATCH(request: Request, { params }: { params: { id: string } }) {
+export async function PATCH(
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
   try {
-    const id = params?.id;
+    const { id } = await context.params;
     const body = await request?.json?.();
     const { title, description, startDate, dueDate, coverImageUrl, contactId, dealId, labelIds } = body ?? {};
 

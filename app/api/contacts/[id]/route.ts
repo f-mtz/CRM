@@ -1,12 +1,16 @@
+import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
 
 // GET single contact
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
   try {
-    const id = params?.id;
+    const { id } = await context.params;
     
     const contact = await prisma?.contact?.findUnique?.({
       where: { id: id ?? '' },
@@ -29,9 +33,12 @@ export async function GET(request: Request, { params }: { params: { id: string }
 }
 
 // PATCH update contact
-export async function PATCH(request: Request, { params }: { params: { id: string } }) {
+export async function PATCH(
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
   try {
-    const id = params?.id;
+    const { id } = await context.params;
     const body = await request?.json?.();
     const { name, email, phone, company, notes, labelIds } = body ?? {};
 
@@ -64,9 +71,12 @@ export async function PATCH(request: Request, { params }: { params: { id: string
 }
 
 // DELETE contact
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
   try {
-    const id = params?.id;
+    const { id } = await context.params;
     
     await prisma?.contact?.delete?.({
       where: { id: id ?? '' },
