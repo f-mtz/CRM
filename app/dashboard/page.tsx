@@ -3,7 +3,21 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Users, Briefcase, DollarSign, CheckSquare, Calendar, Activity, GripVertical, Settings, Eye, EyeOff } from 'lucide-react';
+import {
+  Users,
+  Briefcase,
+  DollarSign,
+  CheckSquare,
+  Calendar,
+  Activity,
+  GripVertical,
+  Settings,
+  Eye,
+  EyeOff,
+  ArrowUpRight,
+  ArrowDownRight,
+  Minus,
+} from 'lucide-react';
 import { format, addDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
@@ -42,6 +56,15 @@ interface DashboardMetrics {
   openDeals: number;
   totalValue: number;
   pendingTasks: number;
+  totalContactsDelta: number;
+  openDealsDelta: number;
+  totalValueDelta: number;
+  pendingTasksDelta: number;
+  // Percentuais também vêm da API, mas recalculamos no cliente para garantir consistência visual
+  totalContactsDeltaPercent?: number | null;
+  openDealsDeltaPercent?: number | null;
+  totalValueDeltaPercent?: number | null;
+  pendingTasksDeltaPercent?: number | null;
   upcomingTasks: any[];
   recentActivities: any[];
   dealsClosingSoon: any[];
@@ -49,6 +72,56 @@ interface DashboardMetrics {
 }
 
 const CHART_COLORS = ['#8b5cf6', '#a78bfa', '#c4b5fd', '#ddd6fe'];
+
+function MetricDelta({
+  current,
+  delta,
+  label,
+}: {
+  current: number;
+  delta: number;
+  label: string;
+}) {
+  const previous = current - delta;
+  const percent =
+    previous > 0 ? (delta / previous) * 100 : current > 0 ? 100 : 0;
+  const roundedPercent = Math.round((percent + Number.EPSILON) * 10) / 10;
+  const tooltip =
+    delta > 0
+      ? `+${delta} (${roundedPercent}%) ${label} em relação ao mês anterior`
+      : delta < 0
+      ? `${delta} (${roundedPercent}%) ${label} em relação ao mês anterior`
+      : `0 (${roundedPercent}%) ${label} em relação ao mês anterior`;
+
+  if (delta > 0) {
+    return (
+      <div className="mt-1 inline-flex items-center gap-1 text-xs text-emerald-600" title={tooltip}>
+        <ArrowUpRight className="h-3 w-3" />
+        <span>
+          +{delta}
+          {` (${roundedPercent}%)`}
+        </span>
+      </div>
+    );
+  }
+  if (delta < 0) {
+    return (
+      <div className="mt-1 inline-flex items-center gap-1 text-xs text-red-600" title={tooltip}>
+        <ArrowDownRight className="h-3 w-3" />
+        <span>
+          {delta}
+          {` (${roundedPercent}%)`}
+        </span>
+      </div>
+    );
+  }
+  return (
+    <div className="mt-1 inline-flex items-center gap-1 text-xs text-muted-foreground" title={tooltip}>
+      <Minus className="h-3 w-3" />
+      <span>{`0 (${roundedPercent}%)`}</span>
+    </div>
+  );
+}
 
 // Componente de Widget Arrastrável
 function SortableWidget({ widget, children, isEditMode }: { widget: DashboardWidget; children: React.ReactNode; isEditMode: boolean }) {
@@ -179,11 +252,16 @@ export default function DashboardPage() {
           <Card className={`${isEditMode ? 'ring-2 ring-dashed ring-primary/30' : ''}`}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total de Contatos</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
+              <Users className="h-4 w-4 text-blue-500" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{metrics.totalContacts}</div>
               <p className="text-xs text-muted-foreground">contatos cadastrados</p>
+              <MetricDelta
+                current={metrics.totalContacts ?? 0}
+                delta={metrics.totalContactsDelta ?? 0}
+                label="contatos"
+              />
             </CardContent>
           </Card>
         );
@@ -193,11 +271,16 @@ export default function DashboardPage() {
           <Card className={`${isEditMode ? 'ring-2 ring-dashed ring-primary/30' : ''}`}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Negócios Abertos</CardTitle>
-              <Briefcase className="h-4 w-4 text-muted-foreground" />
+              <Briefcase className="h-4 w-4 text-amber-500" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{metrics.openDeals}</div>
               <p className="text-xs text-muted-foreground">em negociação</p>
+              <MetricDelta
+                current={metrics.openDeals ?? 0}
+                delta={metrics.openDealsDelta ?? 0}
+                label="negócios"
+              />
             </CardContent>
           </Card>
         );
@@ -207,13 +290,18 @@ export default function DashboardPage() {
           <Card className={`${isEditMode ? 'ring-2 ring-dashed ring-primary/30' : ''}`}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Valor Total</CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
+              <DollarSign className="h-4 w-4 text-green-500" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
                 R$ {(metrics.totalValue ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
               </div>
               <p className="text-xs text-muted-foreground">em negociação</p>
+              <MetricDelta
+                current={metrics.totalValue ?? 0}
+                delta={Math.round(metrics.totalValueDelta ?? 0)}
+                label="valor"
+              />
             </CardContent>
           </Card>
         );
@@ -223,11 +311,16 @@ export default function DashboardPage() {
           <Card className={`${isEditMode ? 'ring-2 ring-dashed ring-primary/30' : ''}`}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Tarefas Pendentes</CardTitle>
-              <CheckSquare className="h-4 w-4 text-muted-foreground" />
+              <CheckSquare className="h-4 w-4 text-blue-500" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{metrics.pendingTasks}</div>
               <p className="text-xs text-muted-foreground">a concluir</p>
+              <MetricDelta
+                current={metrics.pendingTasks ?? 0}
+                delta={metrics.pendingTasksDelta ?? 0}
+                label="tarefas"
+              />
             </CardContent>
           </Card>
         );
@@ -271,7 +364,7 @@ export default function DashboardPage() {
           <Card className={`${isEditMode ? 'ring-2 ring-dashed ring-primary/30' : ''}`}>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base">
-                <Calendar className="h-5 w-5" />
+                <Calendar className="h-5 w-5 text-blue-500" />
                 Próximas Tarefas
               </CardTitle>
             </CardHeader>
@@ -299,7 +392,7 @@ export default function DashboardPage() {
           <Card className={`${isEditMode ? 'ring-2 ring-dashed ring-primary/30' : ''}`}>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base">
-                <DollarSign className="h-5 w-5" />
+                <DollarSign className="h-5 w-5 text-amber-400" />
                 Negócios Fechando
               </CardTitle>
             </CardHeader>
@@ -327,7 +420,7 @@ export default function DashboardPage() {
           <Card className={`${isEditMode ? 'ring-2 ring-dashed ring-primary/30' : ''}`}>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base">
-                <Activity className="h-5 w-5" />
+                <Activity className="h-5 w-5 text-red-500" />
                 Atividades Recentes
               </CardTitle>
             </CardHeader>

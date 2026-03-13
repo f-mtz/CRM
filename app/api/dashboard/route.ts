@@ -6,8 +6,30 @@ export const dynamic = 'force-dynamic';
 // GET dashboard metrics
 export async function GET() {
   try {
-    // Total contacts
+    const now = new Date();
+    const startOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+
+    // Total contacts (all time)
     const totalContacts = await prisma?.contact?.count?.() ?? 0;
+
+    // New contacts this month vs last month
+    const contactsThisMonth =
+      (await prisma?.contact?.count?.({
+        where: { createdAt: { gte: startOfThisMonth } },
+      })) ?? 0;
+    const contactsLastMonth =
+      (await prisma?.contact?.count?.({
+        where: {
+          createdAt: {
+            gte: startOfLastMonth,
+            lt: startOfThisMonth,
+          },
+        },
+      })) ?? 0;
+    const totalContactsDelta = contactsThisMonth - contactsLastMonth;
+    const totalContactsDeltaPercent =
+      contactsLastMonth > 0 ? (totalContactsDelta / contactsLastMonth) * 100 : null;
 
     // Open deals (lead, in_progress)
     const openDeals = await prisma?.deal?.count?.({
@@ -15,6 +37,28 @@ export async function GET() {
         status: { in: ['lead', 'in_progress'] },
       },
     }) ?? 0;
+
+    // New open deals this month vs last month
+    const openDealsThisMonth =
+      (await prisma?.deal?.count?.({
+        where: {
+          status: { in: ['lead', 'in_progress'] },
+          createdAt: { gte: startOfThisMonth },
+        },
+      })) ?? 0;
+    const openDealsLastMonth =
+      (await prisma?.deal?.count?.({
+        where: {
+          status: { in: ['lead', 'in_progress'] },
+          createdAt: {
+            gte: startOfLastMonth,
+            lt: startOfThisMonth,
+          },
+        },
+      })) ?? 0;
+    const openDealsDelta = openDealsThisMonth - openDealsLastMonth;
+    const openDealsDeltaPercent =
+      openDealsLastMonth > 0 ? (openDealsDelta / openDealsLastMonth) * 100 : null;
 
     // Total value of open deals
     const deals = await prisma?.deal?.findMany?.({
@@ -25,8 +69,39 @@ export async function GET() {
     }) ?? [];
     const totalValue = (deals ?? []).reduce((sum, deal) => sum + (deal?.value ?? 0), 0);
 
+    // Total value of deals created this month vs last month
+    const dealsThisMonth =
+      (await prisma?.deal?.findMany?.({
+        where: {
+          status: { in: ['lead', 'in_progress'] },
+          createdAt: { gte: startOfThisMonth },
+        },
+        select: { value: true },
+      })) ?? [];
+    const dealsLastMonth =
+      (await prisma?.deal?.findMany?.({
+        where: {
+          status: { in: ['lead', 'in_progress'] },
+          createdAt: {
+            gte: startOfLastMonth,
+            lt: startOfThisMonth,
+          },
+        },
+        select: { value: true },
+      })) ?? [];
+    const totalValueThisMonth = (dealsThisMonth ?? []).reduce(
+      (sum, deal) => sum + (deal?.value ?? 0),
+      0
+    );
+    const totalValueLastMonth = (dealsLastMonth ?? []).reduce(
+      (sum, deal) => sum + (deal?.value ?? 0),
+      0
+    );
+    const totalValueDelta = totalValueThisMonth - totalValueLastMonth;
+    const totalValueDeltaPercent =
+      totalValueLastMonth > 0 ? (totalValueDelta / totalValueLastMonth) * 100 : null;
+
     // Pending tasks (cards without due date past or today)
-    const now = new Date();
     const pendingTasks = await prisma?.card?.count?.({
       where: {
         OR: [
@@ -35,6 +110,26 @@ export async function GET() {
         ],
       },
     }) ?? 0;
+
+    // New tasks created this month vs last month
+    const pendingTasksThisMonth =
+      (await prisma?.card?.count?.({
+        where: {
+          createdAt: { gte: startOfThisMonth },
+        },
+      })) ?? 0;
+    const pendingTasksLastMonth =
+      (await prisma?.card?.count?.({
+        where: {
+          createdAt: {
+            gte: startOfLastMonth,
+            lt: startOfThisMonth,
+          },
+        },
+      })) ?? 0;
+    const pendingTasksDelta = pendingTasksThisMonth - pendingTasksLastMonth;
+    const pendingTasksDeltaPercent =
+      pendingTasksLastMonth > 0 ? (pendingTasksDelta / pendingTasksLastMonth) * 100 : null;
 
     // Upcoming tasks (next 7 days)
     const sevenDaysFromNow = new Date();
@@ -99,6 +194,14 @@ export async function GET() {
       openDeals,
       totalValue,
       pendingTasks,
+      totalContactsDelta,
+      openDealsDelta,
+      totalValueDelta,
+      pendingTasksDelta,
+      totalContactsDeltaPercent,
+      openDealsDeltaPercent,
+      totalValueDeltaPercent,
+      pendingTasksDeltaPercent,
       upcomingTasks: (upcomingTasks ?? []).map((task) => ({
         id: task?.id ?? '',
         title: task?.title ?? '',
