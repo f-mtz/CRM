@@ -1,12 +1,16 @@
+import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
 
 // GET single board
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
   try {
-    const id = params?.id;
+    const { id } = await context.params;
     
     const board = await prisma?.board?.findUnique?.({
       where: { id: id ?? '' },
@@ -39,9 +43,12 @@ export async function GET(request: Request, { params }: { params: { id: string }
 }
 
 // DELETE board
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
   try {
-    const id = params?.id;
+    const { id } = await context.params;
     
     await prisma?.board?.delete?.({
       where: { id: id ?? '' },
