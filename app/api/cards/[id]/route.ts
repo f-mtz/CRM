@@ -86,9 +86,12 @@ export async function PATCH(
 }
 
 // DELETE card
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
   try {
-    const id = params?.id;
+    const { id } = await context.params;
     
     await prisma?.card?.delete?.({
       where: { id: id ?? '' },

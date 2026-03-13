@@ -1,12 +1,16 @@
+import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
 
 // PATCH update checklist item
-export async function PATCH(request: Request, { params }: { params: { itemId: string } }) {
+export async function PATCH(
+  request: NextRequest,
+  context: { params: Promise<{ itemId: string }> }
+) {
   try {
-    const itemId = params?.itemId;
+    const { itemId } = await context.params;
     const body = await request?.json?.();
     const { text, completed } = body ?? {};
 
@@ -27,9 +31,12 @@ export async function PATCH(request: Request, { params }: { params: { itemId: st
 }
 
 // DELETE checklist item
-export async function DELETE(request: Request, { params }: { params: { itemId: string } }) {
+export async function DELETE(
+  request: NextRequest,
+  context: { params: Promise<{ itemId: string }> }
+) {
   try {
-    const itemId = params?.itemId;
+    const { itemId } = await context.params;
     
     await prisma?.checklistItem?.delete?.({
       where: { id: itemId ?? '' },
